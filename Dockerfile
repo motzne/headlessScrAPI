@@ -1,11 +1,17 @@
-# Use latest Node.js LTS version as the base image
-FROM node:lts
+# Use latest Node.js image
+FROM node:latest
+
 
 # Set working directory inside the container
 WORKDIR /app
 
 # Install dependencies for Puppeteer to run in headless mode
-RUN apt-get update && apt-get install -y \
+USER root
+RUN apt-get update
+RUN apt-get install chromium -y
+
+
+RUN apt-get install -y \
     wget \
     ca-certificates \
     fonts-liberation \
@@ -40,6 +46,8 @@ EXPOSE 5555
 
 # Set environment variable for production (can be changed when running container)
 ENV NODE_ENV=production
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+
 
 # Run the application
 CMD ["node", "server.js"]
