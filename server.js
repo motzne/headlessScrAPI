@@ -165,7 +165,12 @@ app.post("/scraper", authenticate, async (req, res) => {
       await browser.close();
       debugLog("Browser closed");
 
+      // Generate ISO timestamp
+      const isoTimestamp = new Date().toISOString();
+
       return {
+        requested_url: url,
+        timestamp: isoTimestamp,
         screenshot: screenshotBase64,
         thumbnail: thumbnailBase64,
         htmlContent: htmlContent,
