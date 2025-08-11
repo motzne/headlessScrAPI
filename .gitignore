@@ -1,0 +1,42 @@
+# Node.js dependencies
+node_modules/
+
+# Log files
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# Environment variables
+.env
+
+# Build output
+/dist
+/build
+
+# IDE and editor files
+.vscode/
+.idea/
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Temporary files and directories
+*.swp
+*.swo
+
+# Puppeteer-related files
+puppeteer/
+
+# Package lock and npm versioning
+package-lock.json
+yarn.lock
+
+# Test coverage output
+coverage/
+
+# Ignore any logs that might be generated
+*.log
+
+# Ignore the directory for saving screenshots, if any
+/screenshots/
