@@ -1,6 +1,6 @@
-# Puppeteer Scraper API
+# headlessScrAPI
 
-This little helper exposes an API that allows you to capture screenshots of websites, scrape their HTML DOM, and generate thumbnails. It uses **Puppeteer**, **Puppeteer-Extra** and **puppeteer-extra-plugin-stealth** for headless browsing.
+This little helper exposes an API that allows you to capture screenshots of websites, scrape their HTML DOM, and generate thumbnails. It uses `Puppeteer`, `Puppeteer-Extra` and `puppeteer-extra-plugin-stealth` for headless browsing.
 
 ## Features
 
@@ -130,12 +130,12 @@ Alternatively, if you prefer not to use Docker Compose, follow these steps:
 1. **Build the Docker image**:
 
    ```bash
-   docker build -t puppeteer-scraper .
+   docker build -t headlessscrapi .
    ```
 
 2. **Run the Docker container**:
    ```bash
-   docker run -p 5555:5555 --env-file .env puppeteer-scraper
+   docker run -p 5555:5555 --env-file .env headlessscrapi
    ```
 
 This will run the container and expose the application on port `5555`.

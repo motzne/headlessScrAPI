@@ -1,5 +1,5 @@
-# Use official Node.js image as a base
-FROM node:16-slim
+# Use official Node.js image based on Debian Bullseye
+FROM node:16-bullseye
 
 # Set working directory inside the container
 WORKDIR /app
