@@ -23,7 +23,7 @@ app.use(bodyParser.json());
 const defaultConfig = {
   viewport: { width: 1920, height: 1080 }, // Normal desktop resolution
   userAgent:
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.6088.2 Safari/537.36",
   browserLaunchTimeout: 5000, // Timeout for browser launch
   pageLoadTimeout: 10000, // Timeout for page load
   headless: true, // Default to headless mode

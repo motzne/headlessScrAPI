@@ -114,7 +114,7 @@ If you have Docker Compose installed, you can use it to build and run the applic
 
 2. **Run the application** with Docker Compose:
    ```bash
-   docker-compose up --build
+   sudo docker-compose up -d --build
    ```
 
 This will:
@@ -135,7 +135,7 @@ Alternatively, if you prefer not to use Docker Compose, follow these steps:
 
 2. **Run the Docker container**:
    ```bash
-   docker run -p 5555:5555 --env-file .env headlessscrapi
+    sudo docker run -d -p 5555:5555 --env-file .env --name headlessscrapi headlessscrapi
    ```
 
 This will run the container and expose the application on port `5555`.
