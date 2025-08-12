@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>HeadlessScrAPI UI</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://unpkg.com/sanitize.css">
+  <style>
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #f7f7fa; margin: 0; padding: 0; }
+    .container { max-width: 540px; margin: 3em auto; background: #fff; border-radius: 12px; box-shadow: 0 2px 16px #0001; padding: 2em; }
+    h1 { text-align: center; margin-bottom: 1.5em; font-weight: 600; }
+    h2 { text-align: center; margin-bottom: 1.5em; }
+    label { display: block; margin: 1em 0 0.3em; font-weight: 500; }
+    input, select, button, textarea { width: 100%; padding: 0.7em; margin-bottom: 1em; border-radius: 6px; border: 1px solid #ddd; font-size: 1em; }
+    input:focus, select:focus, textarea:focus { border-color: #0078d7; outline: none; }
+    .optional-section { background: #f0f4fa; padding: 1em; border-radius: 8px; margin-bottom: 1em; }
+    .optional-toggle { cursor: pointer; color: #0078d7; text-decoration: underline; margin-bottom: 0.5em; display: inline-block; }
+    button { background: #0078d7; color: #fff; border: none; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+    button:hover { background: #005fa3; }
+    hr { margin: 2em 0; border: none; border-top: 1px solid #eee; }
+    .result { margin-top: 2em; }
+    .result img { max-width: 100%; border-radius: 8px; margin-bottom: 1em; }
+    .error { color: #d70022; font-weight: 500; }
+    .loading { color: #0078d7; font-weight: 500; }
+    .section-title { font-size: 1.1em; margin-bottom: 0.5em; font-weight: 600; }
+     footer {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            background-color: #f5f5f5;
+            padding: 10px;
+            text-align: center;
+            font-size: 12px;
+        }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>HeadlessScrAPI Project</h1>
+    <form id="scraperForm">
+      <label for="url">Target URL</label>
+      <input type="url" id="url" name="url" placeholder="https://example.com" required autocomplete="off" />
+
+      <label for="apiKey">API Key</label>
+      <input type="password" id="apiKey" name="apiKey" placeholder="Enter your API key" required autocomplete="off" />
+
+      <span class="optional-toggle" onclick="toggleOptional()">Show advanced options</span>
+      <div class="optional-section" id="optionalSection" style="display:none;">
+        <div class="section-title">Advanced Options</div>
+        <label for="viewport_width">Viewport Width</label>
+        <input type="number" id="viewport_width" name="viewport_width" value="1366" min="320" max="3840" />
+
+        <label for="viewport_height">Viewport Height</label>
+        <input type="number" id="viewport_height" name="viewport_height" value="768" min="320" max="2160" />
+
+        <label for="userAgent">User Agent</label>
+        <input type="text" id="userAgent" name="userAgent" value="Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.82 Safari/537.36" />
+
+        <label for="browserLaunchTimeout">Browser Launch Timeout (ms)</label>
+        <input type="number" id="browserLaunchTimeout" name="browserLaunchTimeout" value="7000" min="1000" />
+
+        <label for="pageLoadTimeout">Page Load Timeout (ms)</label>
+        <input type="number" id="pageLoadTimeout" name="pageLoadTimeout" value="15000" min="1000" />
+
+        <label for="headless">Headless Mode</label>
+        <select id="headless" name="headless">
+          <option value="true" selected>True</option>
+          <option value="false">False</option>
+        </select>
+
+        <div class="section-title">Thumbnail Settings</div>
+        <label for="thumbnail_width">Thumbnail Width</label>
+        <input type="number" id="thumbnail_width" name="thumbnail_width" value="300" min="50" max="1000" />
+
+        <label for="thumbnail_height">Thumbnail Height</label>
+        <input type="number" id="thumbnail_height" name="thumbnail_height" value="300" min="50" max="1000" />
+
+        <label for="quality">Thumbnail Quality (1-100)</label>
+        <input type="number" id="quality" name="quality" value="70" min="1" max="100" />
+      </div>
+      <button type="submit">Scrape</button>
+    </form>
+    <hr>
+    <h2>Results</h2>
+    <div class="result" id="result"></div>
+  </div>
+  <script>
+    function toggleOptional() {
+      const section = document.getElementById('optionalSection');
+      section.style.display = section.style.display === 'none' ? 'block' : 'none';
+    }
+
+    document.getElementById("scraperForm").addEventListener("submit", async function(e) {
+      e.preventDefault();
+      const form = e.target;
+      const url = form.url.value.trim();
+      const apiKey = form.apiKey.value.trim();
+
+      // Create JSON object for the request
+      const requestBody = {
+        url: url,
+        config: {
+          viewport: {
+            width: parseInt(form.viewport_width.value),
+            height: parseInt(form.viewport_height.value)
+          },
+          userAgent: form.userAgent.value,
+          browserLaunchTimeout: parseInt(form.browserLaunchTimeout.value),
+          pageLoadTimeout: parseInt(form.pageLoadTimeout.value),
+          headless: form.headless.value === "true",
+          args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
+          thumbnailSettings: {
+            thumbnail_width: parseInt(form.thumbnail_width.value),
+            thumbnail_height: parseInt(form.thumbnail_height.value),
+            quality: parseInt(form.quality.value)
+          }
+        }
+      };
+
+      const resultDiv = document.getElementById("result");
+      resultDiv.innerHTML = '<span class="loading">Scraping in progress...</span>';
+
+      try {
+        const response = await fetch("/api/scraper", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${apiKey}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(requestBody)
+        });
+
+        const data = await response.json();
+        if (response.ok) {
+          resultDiv.innerHTML = `
+            <div>
+              <div class="section-title">Requested URL</div>
+              <div>${data.requested_url}</div>
+              <div>${data.timestamp}</div>
+              <div class="section-title">Thumbnail</div>
+              <img src="data:image/jpeg;base64,${data.thumbnail}" alt="Thumbnail" />
+              <div class="section-title">Full Screenshot</div>
+              <img src="data:image/png;base64,${data.screenshotFullPage}" alt="Full Screenshot" />
+              <div class="section-title">HTML Content</div>
+              <textarea rows="10" readonly>${data.htmlContent}</textarea>
+              <div class="section-title">Timestamp</div>
+ 
+            </div>
+          `;
+        } else {
+          resultDiv.innerHTML = `<span class="error">${data.message || "Error occurred"}</span>`;
+        }
+      } catch (err) {
+        resultDiv.innerHTML = `<span class="error">Network error: ${err.message}</span>`;
+      }
+    });
+  </script>
+  <footer>
+    <div class="footer-text"><> with
+        <i style="font-size: 16px; color: red; font-style: normal;">❤️</i>
+        in Switzerland
+        </div>
+</footer>
+</body>
+</html>

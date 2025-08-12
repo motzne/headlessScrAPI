@@ -110,6 +110,7 @@ If you have Docker Compose installed, you can use it to build and run the applic
 
    ```
    API_ACCESS_TOKEN=your_secure_api_token
+   CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium 
    ```
 
 2. **Run the application** with Docker Compose:
