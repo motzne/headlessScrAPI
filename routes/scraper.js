@@ -54,9 +54,9 @@ router.post("/", async (req, res) => {
         args: effectiveConfig.args,
         timeout: effectiveConfig.browserLaunchTimeout,
       };
-      if (process.env.CHROMIUM_PATH) {
-        debugLog(`Using custom Chromium executable: ${process.env.CHROMIUM_PATH}`);
-        launchOptions.executablePath = process.env.CHROMIUM_PATH;
+      if (process.env.USE_CHROMIUM === "true") {
+        debugLog(`Using custom Chromium executable: ${process.env.USE_CHROMIUM}`);
+        launchOptions.executablePath = '/usr/bin/chromium'
       }
       const browser = await puppeteerExtra.launch(launchOptions);
 
