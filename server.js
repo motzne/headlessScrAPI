@@ -151,6 +151,8 @@ app.post("/scraper", authenticate, async (req, res) => {
       // Capture the screenshot as base64
       debugLog("Capturing full screenshot");
       const screenshotBase64 = await page.screenshot({ encoding: "base64" });
+      const screenshotFullPageBase64 = await page.screenshot({ encoding: "base64", fullpage: true });
+
 
       // Generate a smaller thumbnail while keeping the aspect ratio
       debugLog("Generating thumbnail");
@@ -172,6 +174,7 @@ app.post("/scraper", authenticate, async (req, res) => {
         requested_url: url,
         timestamp: isoTimestamp,
         screenshot: screenshotBase64,
+        screenshotFullPage: screenshotFullPageBase64,
         thumbnail: thumbnailBase64,
         htmlContent: htmlContent,
       };
