@@ -18,17 +18,29 @@ const defaultConfig = {
     thumbnail_width: 400,
     thumbnail_height: 400,
     quality: 80,
+    optimizedForMSTeams: false
   },
 };
 
 const router = express.Router();
 
 router.post("/", async (req, res) => {
-  const { url, config } = req.body;
+  const { url, config, features } = req.body;
+
   if (!url) {
     debugLog("Missing URL in request body");
     return res.status(400).json({ message: "URL is required" });
   }
+
+  // Default to enabling all features if none specified
+  const effectiveFeatures = {
+    screenshot: false,
+    screenshotFullpage: false,
+    thumbnail: false,
+    htmlContent: false,
+    redirectChain: false, 
+    ...features,
+  };
 
   const effectiveConfig = {
     viewport: config?.viewport || defaultConfig.viewport,
@@ -41,58 +53,81 @@ router.post("/", async (req, res) => {
       thumbnail_width: config?.thumbnailSettings?.thumbnail_width || defaultConfig.thumbnailSettings.thumbnail_width,
       thumbnail_height: config?.thumbnailSettings?.thumbnail_height || defaultConfig.thumbnailSettings.thumbnail_height,
       quality: config?.thumbnailSettings?.quality || defaultConfig.thumbnailSettings.quality,
+      optimizedForMSTeams: config?.optimizedForMSTeams !== undefined ? config.optimizedForMSTeams : defaultConfig.optimizedForMSTeams
     },
   };
 
   try {
     debugLog(`Scraper started for URL: ${url}`);
     const result = await retry(async () => {
-
       debugLog("Launching browser with Puppeteer");
       const launchOptions = {
         headless: effectiveConfig.headless,
         args: effectiveConfig.args,
         timeout: effectiveConfig.browserLaunchTimeout,
       };
+
       if (process.env.USE_CHROMIUM === "true") {
         debugLog(`Using custom Chromium executable: ${process.env.USE_CHROMIUM}`);
-        launchOptions.executablePath = '/usr/bin/chromium'
+        launchOptions.executablePath = '/usr/bin/chromium';
       }
-      const browser = await puppeteerExtra.launch(launchOptions);
 
+      const browser = await puppeteerExtra.launch(launchOptions);
       const page = await browser.newPage();
       await page.setViewport(effectiveConfig.viewport);
       await page.setUserAgent(effectiveConfig.userAgent);
 
       debugLog("Navigating to the URL");
-      await page.goto(url, {
+      const response = await page.goto(url, {
         waitUntil: "networkidle2",
         timeout: effectiveConfig.pageLoadTimeout,
       });
 
-      debugLog("Capturing full screenshot");
-      const screenshotBase64 = await page.screenshot({ encoding: "base64" });
-      const screenshotFullPageBase64 = await page.screenshot({ encoding: "base64", fullPage: true });
+      const responseData = {};
+      const isoTimestamp = new Date().toISOString();
+      responseData.requested_url = url;
+      responseData.timestamp = isoTimestamp;
 
-      debugLog("Generating thumbnail");
-      const thumbnailBase64 = await generateThumbnail(screenshotBase64, effectiveConfig.thumbnailSettings);
+      if (effectiveFeatures.redirectChain && response) {
+        debugLog("Capturing redirect chain");
+        // Puppeteer redirectChain returns array of Requests
+        const chain = response.request().redirectChain();
+        responseData.redirectChain = chain.map(r => ({
+          url: r.url(),
+          method: r.method(),
+          headers: r.headers(),
+        }));
+      }
 
-      debugLog("Getting page HTML content");
-      const htmlContent = await page.content();
+      if (effectiveFeatures.screenshot) {
+        debugLog("Capturing screenshot");
+        responseData.screenshot = await page.screenshot({ encoding: "base64" });
+      }
+
+      if (effectiveFeatures.screenshotFullpage) {
+        debugLog("Capturing full-page screenshot");
+        responseData.screenshotFullPage = await page.screenshot({ encoding: "base64", fullPage: true });
+      }
+
+     if (effectiveFeatures.thumbnail) {
+        debugLog("Generating thumbnail");
+        const sourceScreenshot = responseData.screenshot || (await page.screenshot({ encoding: "base64" }));
+        responseData.thumbnail = await generateThumbnail(
+            sourceScreenshot,
+            effectiveConfig.thumbnailSettings
+        );
+        }
+
+
+      if (effectiveFeatures.htmlContent) {
+        debugLog("Getting HTML content");
+        responseData.htmlContent = await page.content();
+      }
 
       await browser.close();
       debugLog("Browser closed");
 
-      const isoTimestamp = new Date().toISOString();
-
-      return {
-        requested_url: url,
-        timestamp: isoTimestamp,
-        screenshot: screenshotBase64,
-        screenshotFullPage: screenshotFullPageBase64,
-        thumbnail: thumbnailBase64,
-        htmlContent: htmlContent,
-      };
+      return responseData;
     });
 
     debugLog("Scraper operation successful");
