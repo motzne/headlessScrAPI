@@ -1,6 +1,7 @@
 const express = require("express");
 const puppeteerExtra = require("puppeteer-extra");
 const StealthPlugin = require("puppeteer-extra-plugin-stealth");
+const useProxy = require('@lem0-packages/puppeteer-page-proxy');
 const retry = require("../utils/retry");
 const debugLog = require("../utils/debugLog");
 const generateThumbnail = require("../utils/generateThumbnail");
@@ -12,7 +13,7 @@ const defaultConfig = {
   userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
   browserLaunchTimeout: 5000,
   pageLoadTimeout: 10000,
-  headless: true,
+  proxy: null,
   args: ["--no-sandbox", "--disable-setuid-sandbox"],
   thumbnailSettings: {
     thumbnail_width: 400,
@@ -47,7 +48,7 @@ router.post("/", async (req, res) => {
     userAgent: config?.userAgent || defaultConfig.userAgent,
     browserLaunchTimeout: config?.browserLaunchTimeout || defaultConfig.browserLaunchTimeout,
     pageLoadTimeout: config?.pageLoadTimeout || defaultConfig.pageLoadTimeout,
-    headless: config?.headless !== undefined ? config.headless : defaultConfig.headless,
+    proxy: config?.proxy !== undefined ? config.proxy : defaultConfig.proxy,
     args: config?.args || defaultConfig.args,
     thumbnailSettings: {
       thumbnail_width: config?.thumbnailSettings?.thumbnail_width || defaultConfig.thumbnailSettings.thumbnail_width,
@@ -62,7 +63,7 @@ router.post("/", async (req, res) => {
     const result = await retry(async () => {
       debugLog("Launching browser with Puppeteer");
       const launchOptions = {
-        headless: effectiveConfig.headless,
+        headless: true,
         args: effectiveConfig.args,
         timeout: effectiveConfig.browserLaunchTimeout,
       };
@@ -74,8 +75,16 @@ router.post("/", async (req, res) => {
 
       const browser = await puppeteerExtra.launch(launchOptions);
       const page = await browser.newPage();
+      if (effectiveConfig.proxy == null){
+        debugLog("No proxy configured, proceeding without proxy");
+      }
+      else {
+        debugLog(`Using proxy: ${effectiveConfig.proxy}`);
+        await useProxy(page, effectiveConfig.proxy);
+      }
       await page.setViewport(effectiveConfig.viewport);
       await page.setUserAgent(effectiveConfig.userAgent);
+
 
       debugLog("Navigating to the URL");
       const response = await page.goto(url, {
