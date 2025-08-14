@@ -1,7 +1,7 @@
 const express = require("express");
 const puppeteerExtra = require("puppeteer-extra");
 const StealthPlugin = require("puppeteer-extra-plugin-stealth");
-const useProxy = require('@lem0-packages/puppeteer-page-proxy');
+const useProxy = require("@lem0-packages/puppeteer-page-proxy");
 const retry = require("../utils/retry");
 const debugLog = require("../utils/debugLog");
 const generateThumbnail = require("../utils/generateThumbnail");
@@ -10,7 +10,8 @@ puppeteerExtra.use(StealthPlugin());
 
 const defaultConfig = {
   viewport: { width: 1920, height: 1080 },
-  userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+  userAgent:
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
   browserLaunchTimeout: 5000,
   pageLoadTimeout: 10000,
   proxy: null,
@@ -19,7 +20,7 @@ const defaultConfig = {
     thumbnail_width: 400,
     thumbnail_height: 400,
     quality: 80,
-    optimizedForMSTeams: false
+    optimizedForMSTeams: false,
   },
 };
 
@@ -39,22 +40,32 @@ router.post("/", async (req, res) => {
     screenshotFullpage: false,
     thumbnail: false,
     htmlContent: false,
-    redirectChain: false, 
+    redirectChain: false,
     ...features,
   };
 
   const effectiveConfig = {
     viewport: config?.viewport || defaultConfig.viewport,
     userAgent: config?.userAgent || defaultConfig.userAgent,
-    browserLaunchTimeout: config?.browserLaunchTimeout || defaultConfig.browserLaunchTimeout,
+    browserLaunchTimeout:
+      config?.browserLaunchTimeout || defaultConfig.browserLaunchTimeout,
     pageLoadTimeout: config?.pageLoadTimeout || defaultConfig.pageLoadTimeout,
     proxy: config?.proxy !== undefined ? config.proxy : defaultConfig.proxy,
     args: config?.args || defaultConfig.args,
     thumbnailSettings: {
-      thumbnail_width: config?.thumbnailSettings?.thumbnail_width || defaultConfig.thumbnailSettings.thumbnail_width,
-      thumbnail_height: config?.thumbnailSettings?.thumbnail_height || defaultConfig.thumbnailSettings.thumbnail_height,
-      quality: config?.thumbnailSettings?.quality || defaultConfig.thumbnailSettings.quality,
-      optimizedForMSTeams: config?.optimizedForMSTeams !== undefined ? config.optimizedForMSTeams : defaultConfig.optimizedForMSTeams
+      thumbnail_width:
+        config?.thumbnailSettings?.thumbnail_width ||
+        defaultConfig.thumbnailSettings.thumbnail_width,
+      thumbnail_height:
+        config?.thumbnailSettings?.thumbnail_height ||
+        defaultConfig.thumbnailSettings.thumbnail_height,
+      quality:
+        config?.thumbnailSettings?.quality ||
+        defaultConfig.thumbnailSettings.quality,
+      optimizedForMSTeams:
+        config?.optimizedForMSTeams !== undefined
+          ? config.optimizedForMSTeams
+          : defaultConfig.optimizedForMSTeams,
     },
   };
 
@@ -69,22 +80,22 @@ router.post("/", async (req, res) => {
       };
 
       if (process.env.USE_CHROMIUM === "true") {
-        debugLog(`Using custom Chromium executable: ${process.env.USE_CHROMIUM}`);
-        launchOptions.executablePath = '/usr/bin/chromium';
+        debugLog(
+          `Using custom Chromium executable: ${process.env.USE_CHROMIUM}`
+        );
+        launchOptions.executablePath = "/usr/bin/chromium";
       }
 
       const browser = await puppeteerExtra.launch(launchOptions);
       const page = await browser.newPage();
-      if (effectiveConfig.proxy == null){
+      if (effectiveConfig.proxy == null) {
         debugLog("No proxy configured, proceeding without proxy");
-      }
-      else {
+      } else {
         debugLog(`Using proxy: ${effectiveConfig.proxy}`);
         await useProxy(page, effectiveConfig.proxy);
       }
       await page.setViewport(effectiveConfig.viewport);
       await page.setUserAgent(effectiveConfig.userAgent);
-
 
       debugLog("Navigating to the URL");
       const response = await page.goto(url, {
@@ -101,7 +112,7 @@ router.post("/", async (req, res) => {
         debugLog("Capturing redirect chain");
         // Puppeteer redirectChain returns array of Requests
         const chain = response.request().redirectChain();
-        responseData.redirectChain = chain.map(r => ({
+        responseData.redirectChain = chain.map((r) => ({
           url: r.url(),
           method: r.method(),
           headers: r.headers(),
@@ -115,18 +126,22 @@ router.post("/", async (req, res) => {
 
       if (effectiveFeatures.screenshotFullpage) {
         debugLog("Capturing full-page screenshot");
-        responseData.screenshotFullPage = await page.screenshot({ encoding: "base64", fullPage: true });
+        responseData.screenshotFullPage = await page.screenshot({
+          encoding: "base64",
+          fullPage: true,
+        });
       }
 
-     if (effectiveFeatures.thumbnail) {
+      if (effectiveFeatures.thumbnail) {
         debugLog("Generating thumbnail");
-        const sourceScreenshot = responseData.screenshot || (await page.screenshot({ encoding: "base64" }));
+        const sourceScreenshot =
+          responseData.screenshot ||
+          (await page.screenshot({ encoding: "base64" }));
         responseData.thumbnail = await generateThumbnail(
-            sourceScreenshot,
-            effectiveConfig.thumbnailSettings
+          sourceScreenshot,
+          effectiveConfig.thumbnailSettings
         );
-        }
-
+      }
 
       if (effectiveFeatures.htmlContent) {
         debugLog("Getting HTML content");
@@ -147,6 +162,11 @@ router.post("/", async (req, res) => {
       message: "Failed to capture scraper data",
       error: error.message,
     });
+  } finally {
+    // Close the browser instance, even if an error occurs
+    if (browser) {
+      await browser.close();
+    }
   }
 });
 
