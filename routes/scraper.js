@@ -69,6 +69,7 @@ router.post("/", async (req, res) => {
     },
   };
 
+  let browser;
   try {
     debugLog(`Scraper started for URL: ${url}`);
     const result = await retry(async () => {
@@ -86,7 +87,7 @@ router.post("/", async (req, res) => {
         launchOptions.executablePath = "/usr/bin/chromium";
       }
 
-      const browser = await puppeteerExtra.launch(launchOptions);
+      browser = await puppeteerExtra.launch(launchOptions);
       const page = await browser.newPage();
       if (effectiveConfig.proxy == null) {
         debugLog("No proxy configured, proceeding without proxy");

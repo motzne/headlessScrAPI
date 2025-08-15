@@ -1,6 +1,6 @@
 const debugLog = require("./debugLog");
 
-module.exports = async (fn, retries = 3, delay = 3000) => {
+module.exports = async (fn, retries = 3, delay = 5000) => {
   let lastError;
   for (let i = 0; i < retries; i++) {
     try {
